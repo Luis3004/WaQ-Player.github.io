@@ -2,242 +2,197 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Music Player Pro | Local DB</title>
-    <!-- Cargamos la DB primero -->
-    <script src="db.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player - Alberto Edition</title>
     <style>
         :root {
-            --bg-dark: #0b0e14;
-            --bg-panel: #1a2029;
-            --primary-orange: #ff9800;
-            --text-main: #ffffff;
-            --text-dim: #8b949e;
+            --bg-color: #0d1117;
+            --accent-orange: #ff9800;
+            --text-gray: #8b949e;
         }
 
         body {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            margin: 0;
+            background-color: var(--bg-color);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             height: 100vh;
-            display: flex; flex-direction: column;
             overflow: hidden;
         }
 
-        /* --- VISTA PRINCIPAL --- */
-        .main-player {
+        /* Contenedor principal según 1000334841.jpg */
+        .player-screen {
+            width: 100%;
+            max-width: 400px;
+            padding-top: 60px;
+            text-align: center;
             flex: 1;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 20px; padding-bottom: 100px;
         }
 
-        .art-container { position: relative; width: 280px; height: 280px; margin-bottom: 25px; }
-
-        #album-art { 
-            width: 100%; height: 100%; border-radius: 35px; 
-            object-fit: cover; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            background: #252a34; transition: transform 0.3s;
+        .album-art {
+            width: 280px;
+            height: 280px;
+            background-color: #1c2128;
+            border-radius: 40px;
+            margin: 0 auto 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            font-weight: bold;
+            color: var(--accent-orange);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        #btn-8d {
-            position: absolute; top: 15px; right: 15px;
-            background: var(--primary-orange); color: #000;
-            border: none; padding: 8px 14px; border-radius: 10px;
-            font-weight: 800; font-size: 0.7rem; cursor: pointer;
-            display: none; z-index: 10; text-transform: uppercase;
-        }
-        #btn-8d.active { background: #fff; color: var(--primary-orange); box-shadow: 0 0 15px var(--primary-orange); }
+        .song-info h2 { font-size: 24px; margin: 0; }
+        .song-info p { color: var(--accent-orange); margin: 8px 0; font-size: 16px; }
+        .song-info span { color: var(--text-gray); font-size: 12px; font-style: italic; }
 
-        .song-details { text-align: center; margin-bottom: 20px; width: 90%; }
-        #title { font-size: 1.7rem; font-weight: 700; margin: 0; }
-        #artist { color: var(--primary-orange); margin: 8px 0 4px; font-size: 1.1rem; }
-        #album-info { color: var(--text-dim); font-size: 0.85rem; margin: 0; font-style: italic; }
-
-        /* --- CONTROLES --- */
-        .progress-area { width: 85%; margin-bottom: 30px; }
-        .bar-bg { width: 100%; height: 5px; background: #2d333b; border-radius: 10px; cursor: pointer; }
-        .bar-fill { height: 100%; width: 0%; background: var(--primary-orange); border-radius: 10px; }
-        .times { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-top: 10px; }
-
-        .controls-row { display: flex; align-items: center; gap: 40px; }
-        .btn-action { background: none; border: none; color: white; font-size: 2.2rem; cursor: pointer; }
-        #play-btn { 
-            background: var(--primary-orange); width: 70px; height: 70px; 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 10px 25px rgba(255, 152, 0, 0.4);
+        /* Controles */
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 40px;
         }
 
-        /* --- CAJÓN DE BIBLIOTECA --- */
-        .library-sheet {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--bg-panel); height: 85vh;
-            border-radius: 35px 35px 0 0;
-            transform: translateY(calc(85vh - 90px));
-            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-            display: flex; flex-direction: column; z-index: 1000;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
-        }
-        .library-sheet.open { transform: translateY(0) !important; }
-
-        .sheet-header { padding: 20px; cursor: pointer; text-align: center; }
-        .drag-handle { width: 50px; height: 5px; background: #3d444d; border-radius: 10px; margin: 0 auto 12px; }
-        .sheet-header span { font-size: 0.85rem; letter-spacing: 4px; color: var(--text-dim); font-weight: 800; }
-
-        .search-container { padding: 0 25px 20px; }
-        #search-input {
-            width: 100%; padding: 14px; border-radius: 15px; border: 1px solid #2d333b;
-            background: #0b0e14; color: white; text-align: center; outline: none; box-sizing: border-box;
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            background-color: var(--accent-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 152, 0, 0.4);
         }
 
-        .song-scroll { flex: 1; overflow-y: auto; padding: 0 20px 40px; }
-        .item { padding: 18px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; background: rgba(255,255,255,0.02); }
-        .item.active { background: rgba(255, 152, 0, 0.15); border-left: 5px solid var(--primary-orange); }
-        .it-t { font-weight: 700; display: block; margin-bottom: 4px; }
-        .it-details { font-size: 0.85rem; color: var(--text-dim); }
+        /* Botón de cambio de modo (Lo amarillo en la imagen) */
+        .mode-selector {
+            width: 60px;
+            height: 6px;
+            background-color: #ffff00;
+            margin: 25px auto;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .mode-selector:active { transform: scaleX(1.2); }
+
+        /* Biblioteca Deslizable */
+        .library-tray {
+            position: fixed;
+            bottom: -75vh;
+            left: 0;
+            width: 100%;
+            height: 85vh;
+            background-color: #161b22;
+            border-radius: 40px 40px 0 0;
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .library-tray.open { transform: translateY(-75vh); }
+
+        .tray-handle {
+            width: 40px;
+            height: 4px;
+            background: #30363d;
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        .library-label {
+            text-align: center;
+            font-size: 12px;
+            letter-spacing: 4px;
+            color: var(--text-gray);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .song-list {
+            overflow-y: auto;
+            padding: 0 20px;
+        }
+
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid #21262d;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <div class="main-player">
-        <div class="art-container">
-            <button id="btn-8d" onclick="toggle8D()">MODO 8D</button>
-            <img id="album-art" src="" alt="Portada">
-        </div>
+    <div class="player-screen">
+        <div class="album-art">TU</div>
         
-        <div class="song-details">
-            <h1 id="title">...</h1>
-            <p id="artist">...</p>
-            <p id="album-info"></p>
+        <div class="song-info">
+            <h2>Tuesday</h2>
+            <p>Burak Yeter, Danelle Sandoval</p>
+            <span>Sencillo: Tuesday (2016)</span>
         </div>
 
-        <div class="progress-area">
-            <div class="bar-bg" id="seek-bar"><div class="bar-fill" id="bar-fill"></div></div>
-            <div class="times">
-                <span id="curr-time">0:00</span>
-                <span id="total-time">0:00</span>
+        <div class="controls">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            <div class="play-btn">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
             </div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M16 6h2v12h-2zm-10.5 6l8.5 6V6z" transform="rotate(180 12 12)"/></svg>
         </div>
 
-        <div class="controls-row">
-            <button class="btn-action" onclick="prev()">⏮</button>
-            <button class="btn-action" id="play-btn" onclick="toggle()">▶</button>
-            <button class="btn-action" onclick="next()">⏭</button>
-        </div>
+        <!-- Botón Amarillo: Cambio de Modo -->
+        <div class="mode-selector" id="modeBtn" onclick="alert('Modo 8D Activado')"></div>
     </div>
 
-    <div class="library-sheet" id="lib-sheet">
-        <div class="sheet-header" onclick="toggleSheet()">
-            <div class="drag-handle"></div>
-            <span>BIBLIOTECA</span>
+    <!-- Biblioteca -->
+    <div class="library-tray" id="tray">
+        <div class="tray-handle"></div>
+        <div class="library-label">BIBLIOTECA</div>
+        <div class="song-list" id="songList">
+            <!-- Ejemplo de items -->
+            <div class="list-item">Tuesday - Burak Yeter</div>
+            <div class="list-item">Lady Gaga - Peso Pluma</div>
+            <div class="list-item">Vita Fer - Los Dareyes</div>
         </div>
-        <div class="search-container">
-            <input type="text" id="search-input" placeholder="Buscar canciones...">
-        </div>
-        <div class="song-scroll" id="song-list"></div>
     </div>
-
-    <audio id="audio-player"></audio>
 
     <script>
-        let canciones = window.cancionesDB || [];
-        let filtradas = [...canciones];
-        let indexActual = 0;
-        let esModo8D = false;
+        const tray = document.getElementById('tray');
+        let startY = 0;
 
-        const player = document.getElementById('audio-player');
-        const sheet = document.getElementById('lib-sheet');
-        const btn8D = document.getElementById('btn-8d');
+        // Lógica de deslizamiento para abrir (Swipe Up)
+        document.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+        });
 
-        function startApp() {
-            renderList();
-            if (canciones.length > 0) cargarCancion(0, false);
-        }
+        document.addEventListener('touchend', (e) => {
+            const endY = e.changedTouches[0].clientY;
+            const diffY = startY - endY;
 
-        function cargarCancion(idx, autoPlay = true) {
-            indexActual = idx;
-            esModo8D = false;
-            const s = canciones[idx];
-            
-            player.src = s.url;
-            document.getElementById('title').innerText = s.nombre;
-            document.getElementById('artist').innerText = s.artista;
-            document.getElementById('album-info').innerText = `${s.tipo_album}: ${s.nombre_album} (${s.anio})`;
-            
-            const art = document.getElementById('album-art');
-            const placeholder = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.nombre)}&background=1a2029&color=ff9800&size=500&bold=true`;
-            art.src = s.cover || placeholder;
+            // Si desliza hacia arriba más de 50px
+            if (diffY > 50 && !tray.classList.contains('open')) {
+                tray.classList.add('open');
+            }
+            // Si desliza hacia abajo más de 50px para cerrar
+            if (diffY < -50 && tray.classList.contains('open')) {
+                tray.classList.remove('open');
+            }
+        });
 
-            // Botón 8D dinámico
-            btn8D.style.display = (s.efecto_8d && s.efecto_8d !== "") ? 'block' : 'none';
-            btn8D.classList.remove('active');
-
-            renderList();
-            if (autoPlay) { player.play(); document.getElementById('play-btn').innerText = '⏸'; }
-        }
-
-        function toggle8D() {
-            const s = canciones[indexActual];
-            const t = player.currentTime;
-            esModo8D = !esModo8D;
-            player.src = esModo8D ? s.efecto_8d : s.url;
-            player.currentTime = t;
-            player.play();
-            btn8D.classList.toggle('active', esModo8D);
-            btn8D.innerText = esModo8D ? "8D ACTIVO" : "MODO 8D";
-        }
-
-        function renderList() {
-            const container = document.getElementById('song-list');
-            container.innerHTML = filtradas.map((s) => {
-                const realIdx = canciones.findIndex(c => c.id === s.id);
-                return `
-                    <div class="item ${realIdx === indexActual ? 'active' : ''}" onclick="cargarCancion(${realIdx})">
-                        <span class="it-t">${s.nombre}</span>
-                        <span class="it-details">${s.artista} • ${s.nombre_album}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function toggleSheet() { sheet.classList.toggle('open'); }
-
-        // Búsqueda
-        document.getElementById('search-input').oninput = (e) => {
-            const q = e.target.value.toLowerCase();
-            filtradas = canciones.filter(s => s.nombre.toLowerCase().includes(q) || s.artista.toLowerCase().includes(q));
-            renderList();
+        // También se puede abrir haciendo click en la etiqueta "BIBLIOTECA"
+        document.querySelector('.library-label').onclick = () => {
+            tray.classList.toggle('open');
         };
-
-        // Controles de audio
-        function toggle() {
-            if (player.paused) { player.play(); document.getElementById('play-btn').innerText = '⏸'; }
-            else { player.pause(); document.getElementById('play-btn').innerText = '▶'; }
-        }
-        function next() { indexActual = (indexActual + 1) % canciones.length; cargarCancion(indexActual); }
-        function prev() { indexActual = (indexActual - 1 + canciones.length) % canciones.length; cargarCancion(indexActual); }
-
-        player.ontimeupdate = () => {
-            const pct = (player.currentTime / player.duration) * 100 || 0;
-            document.getElementById('bar-fill').style.width = pct + '%';
-            document.getElementById('curr-time').innerText = formatTime(player.currentTime);
-        };
-        player.onloadedmetadata = () => document.getElementById('total-time').innerText = formatTime(player.duration);
-        player.onended = next;
-
-        function formatTime(s) { 
-            if (!s) return "0:00";
-            const m = Math.floor(s/60), sec = Math.floor(s%60); 
-            return `${m}:${sec<10?'0'+sec:sec}`; 
-        }
-
-        document.getElementById('seek-bar').onclick = (e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            player.currentTime = ((e.clientX - rect.left) / rect.width) * player.duration;
-        };
-
-        startApp();
     </script>
 </body>
 </html>
